@@ -242,6 +242,15 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e2c1220a6c8f41949ae88480b560871b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  NUM_PARTICLES: 4096
+  RenderCam: {fileID: 963194227}
+  spawnArea: {x: 5, y: 5, z: 5}
+  particleDirection: {x: 0, y: 1, z: 0}
+  particleSize: 1
+  particleComputeShader: {fileID: 7200000, guid: 4a6afbe3e9eef954c8d5ed7924eeb7cf,
+    type: 3}
+  particleRenderShader: {fileID: 4800000, guid: 0d13e4818fcc6c54e9b52c405239bcb6,
+    type: 3}
 --- !u!4 &787778528
 Transform:
   m_ObjectHideFlags: 0
