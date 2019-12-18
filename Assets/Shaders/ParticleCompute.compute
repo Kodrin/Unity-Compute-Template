@@ -11,6 +11,17 @@ RWStructuredBuffer<ParticleData> _ParticleBuffer;
 void CSMain (uint3 id : SV_DispatchThreadID)
 {
     // TODO: insert actual code here!
+    int idx = id.x;
+    ParticleData p = _ParticleBuffer[idx];
+
+    float3 particle_pos = p.position;
+    float3 particle_vel = p.velocity;
+
+
+    p.position = particle_pos;
+    p.velocity = particle_vel;
+
+    _ParticleBuffer[idx] = p;
 
     // Result[id.xy] = float4(id.x & id.y, (id.x & 15)/15.0, (id.y & 15)/15.0, 0.0);
 }

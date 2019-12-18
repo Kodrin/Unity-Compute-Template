@@ -23,8 +23,8 @@ public class ParticleMaster : MonoBehaviour
     #region Compute Parameters
     public Camera RenderCam;
     public Vector3 spawnArea = new Vector3(5,5,5);
-    public Vector3 particleDirection;
-    public float particleSize;
+    public Vector3 particleDirection = new Vector3(0,1,0);
+    public float particleSize = 1;
 
     #endregion
 
@@ -112,6 +112,7 @@ public class ParticleMaster : MonoBehaviour
         Material m = particleRenderMaterial;
         m.SetPass(0); 
         m.SetMatrix("_InvViewMatrix", inverseViewMatrix);
+        m.SetBuffer("_ParticleBuffer", particleComputeBuffer);
         // m.SetColor("", );
 
         Graphics.DrawProceduralNow(MeshTopology.Points, (int)NUM_PARTICLES);
