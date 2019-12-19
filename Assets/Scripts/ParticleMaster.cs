@@ -25,6 +25,7 @@ public class ParticleMaster : MonoBehaviour
     public Vector3 spawnArea = new Vector3(5,5,5);
     public Vector3 particleDirection = new Vector3(0,1,0);
     public float particleSize = 1;
+    public Mesh BoidMesh;
 
     #endregion
 
@@ -32,12 +33,21 @@ public class ParticleMaster : MonoBehaviour
     public ComputeShader particleComputeShader;
     public Shader particleRenderShader;
     ComputeBuffer particleComputeBuffer;
+    ComputeBuffer _drawArgsBuffer;
     Material particleRenderMaterial;
     #endregion 
 
     // Start is called before the first frame update
     void Start()
     {
+                // Initialize the indirect draw args buffer.
+        _drawArgsBuffer = new ComputeBuffer(
+            1, 5 * sizeof(uint), ComputeBufferType.IndirectArguments
+        );
+
+        _drawArgsBuffer.SetData(new uint[5] {
+            BoidMesh.GetIndexCount(0), (uint) NUM_PARTICLES, 0, 0, 0
+        });
         GenerateParticleBuffer();
 
         //create the material from the shader 
@@ -64,6 +74,9 @@ public class ParticleMaster : MonoBehaviour
             particleComputeBuffer.Release();
             particleComputeBuffer = null;   
         }
+
+        if (_drawArgsBuffer != null) _drawArgsBuffer.Release();
+
     }
     ParticleData CreateParticleData()
     {
@@ -98,23 +111,28 @@ public class ParticleMaster : MonoBehaviour
             // Find Main function
             int kernelId = cs.FindKernel("CSMain");
 
+            var inverseViewMatrix = RenderCam.worldToCameraMatrix.inverse;
+            Material m = particleRenderMaterial;
+            // m.SetPass(0); 
+            // m.SetMatrix("_InvViewMatrix", inverseViewMatrix);
+            m.SetBuffer("boidBuffer", particleComputeBuffer);
 
             // set the particle buffer
             cs.SetBuffer(kernelId, "_ParticleBuffer", particleComputeBuffer);
             
 		    // execute the result (sends all these operations to the compute)
             cs.Dispatch(kernelId, numThreadGroup, 1, 1);
+            // Graphics.DrawProceduralNow(MeshTopology.Points, (int)NUM_PARTICLES);
+                    Graphics.DrawMeshInstancedIndirect(
+                BoidMesh, 0, particleRenderMaterial,
+                new Bounds(Vector3.zero, Vector3.one * 1000),
+                _drawArgsBuffer, 0
+            );
     }
 
     void RenderParticles()
     {
-        var inverseViewMatrix = RenderCam.worldToCameraMatrix.inverse;
-        Material m = particleRenderMaterial;
-        m.SetPass(0); 
-        m.SetMatrix("_InvViewMatrix", inverseViewMatrix);
-        m.SetBuffer("_ParticleBuffer", particleComputeBuffer);
         // m.SetColor("", );
 
-        Graphics.DrawProceduralNow(MeshTopology.Points, (int)NUM_PARTICLES);
     }
 }

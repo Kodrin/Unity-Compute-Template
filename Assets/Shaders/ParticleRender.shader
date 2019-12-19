@@ -1,82 +1,82 @@
-﻿Shader "Unlit/ParticleRender"
-{
-    Properties
-    {
-        _MainTex ("Texture", 2D) = "white" {}
-    }
-    SubShader
-    {
-        Tags { "RenderType"="Opaque" }
-        LOD 100
+﻿Shader "BoidFlockSimple" { // StructuredBuffer + SurfaceShader
 
-        Pass
-        {
-            CGPROGRAM
-            #pragma vertex vert
-            #pragma fragment frag
-            // make fog work
-            #pragma multi_compile_fog
+   Properties {
+		_Color ("Color", Color) = (1,1,1,1)
+		_MainTex ("Albedo (RGB)", 2D) = "white" {}
+		_BumpMap ("Bumpmap", 2D) = "bump" {}
+		_MetallicGlossMap("Metallic", 2D) = "white" {}
+		_Metallic ("Metallic", Range(0,1)) = 0.0
+		_Glossiness ("Smoothness", Range(0,1)) = 1.0
+	}
 
-            #include "UnityCG.cginc"
-            #include "particledata.cginc"
+   SubShader {
+ 
+		CGPROGRAM
 
-            struct appdata
-            {
-                float4 vertex : POSITION;
-                float2 uv : TEXCOORD0;
-            };
+		sampler2D _MainTex;
+		sampler2D _BumpMap;
+		sampler2D _MetallicGlossMap;
+		struct Input {
+			float2 uv_MainTex;
+			float2 uv_BumpMap;
+			float3 worldPos;
+		};
+		half _Glossiness;
+		half _Metallic;
+		fixed4 _Color;
+ 
+        #pragma surface surf Standard vertex:vert addshadow nolightmap
+        #pragma instancing_options procedural:setup
 
-            struct v2f
-            {
-                float4 position : POSITION;
-                float2 uv : TEXCOORD0;
-                UNITY_FOG_COORDS(1)
-                // float4 vertex : SV_POSITION;
-            };
+        #include "particledata.cginc"
 
-            static const float3 g_positions[4] =
-            {
-                float3(-1, 1, 0),
-                float3( 1, 1, 0),
-                float3(-1,-1, 0),
-                float3( 1,-1, 0),
-            };
+        float4x4 _LookAtMatrix;
+        float3 _BoidPosition;
 
-            static const float2 g_texcoords[4] =
-            {
-                float2(0, 0),
-                float2(1, 0),
-                float2(0, 1),
-                float2(1, 1),
-            };
+         #ifdef UNITY_PROCEDURAL_INSTANCING_ENABLED
+            StructuredBuffer<ParticleData> boidBuffer; 
+         #endif
 
-            sampler2D _MainTex;
-            float4 _MainTex_ST;
-            float     _ParticleSize;
-            float4x4  _InvViewMatrix;
-
-            StructuredBuffer<ParticleData> _ParticleBuffer;
-
-            v2f vert (appdata v, uint id : SV_VertexID)
-            {
-                v2f o = (v2f)0;
-                float3 position = g_positions[0] * 1.0; //* _particle size 
-                o.position = UnityObjectToClipPos(float4(position, 1.0));
-                o.position = float4(_ParticleBuffer[id].position, 1);
-                o.uv = TRANSFORM_TEX(v.uv, _MainTex);
-                // UNITY_TRANSFER_FOG(o,o.vertex);
-                return o;
-            }
-
-            fixed4 frag (v2f i) : SV_Target
-            {
-                // sample the texture
-                fixed4 col = tex2D(_MainTex, i.uv);
-                // apply fog
-                UNITY_APPLY_FOG(i.fogCoord, col);
-                return col;
-            }
-            ENDCG
+        float4x4 look_at_matrix(float3 at, float3 eye, float3 up) {
+            float3 zaxis = normalize(at - eye);
+            float3 xaxis = normalize(cross(up, zaxis));
+            float3 yaxis = cross(zaxis, xaxis);
+            return float4x4(
+                xaxis.x, yaxis.x, zaxis.x, 0,
+                xaxis.y, yaxis.y, zaxis.y, 0,
+                xaxis.z, yaxis.z, zaxis.z, 0,
+                0, 0, 0, 1
+            );
         }
-    }
+     
+         void vert(inout appdata_full v, out Input data)
+        {
+            UNITY_INITIALIZE_OUTPUT(Input, data);
+
+            #ifdef UNITY_PROCEDURAL_INSTANCING_ENABLED
+                v.vertex = mul(_LookAtMatrix, v.vertex);
+                v.vertex.xyz += _BoidPosition;
+            #endif
+        }
+
+        void setup()
+        {
+            #ifdef UNITY_PROCEDURAL_INSTANCING_ENABLED
+                _BoidPosition = boidBuffer[unity_InstanceID].position;
+                _LookAtMatrix = look_at_matrix(_BoidPosition, _BoidPosition + (boidBuffer[unity_InstanceID].velocity * -1), float3(0.0, 1.0, 0.0));
+            #endif
+        }
+ 
+         void surf (Input IN, inout SurfaceOutputStandard o) {
+            fixed4 c = tex2D (_MainTex, IN.uv_MainTex) * _Color;
+			fixed4 m = tex2D (_MetallicGlossMap, IN.uv_MainTex); 
+			o.Albedo = c.rgb;
+			o.Alpha = c.a;
+			o.Normal = UnpackNormal (tex2D (_BumpMap, IN.uv_BumpMap));
+			o.Metallic = m.r;
+			o.Smoothness = _Glossiness * m.a;
+         }
+ 
+         ENDCG
+   }
 }
