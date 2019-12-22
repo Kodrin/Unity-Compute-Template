@@ -26,6 +26,7 @@ public class ParticleMaster : MonoBehaviour
     public Vector3 particleDirection = new Vector3(0,1,0);
     public float particleSize = 1;
     public Mesh BoidMesh;
+    public Color particleColor;
 
     #endregion
 
@@ -114,11 +115,6 @@ public class ParticleMaster : MonoBehaviour
             // Find Main function
             int kernelId = cs.FindKernel("CSMain");
 
-            var inverseViewMatrix = RenderCam.worldToCameraMatrix.inverse;
-            Material m = particleRenderMaterial;
-            // m.SetPass(0); 
-            // m.SetMatrix("_InvViewMatrix", inverseViewMatrix);
-            m.SetBuffer("boidBuffer", particleComputeBuffer);
 
             // set the particle buffer
             cs.SetBuffer(kernelId, "_ParticleBuffer", particleComputeBuffer);
@@ -136,6 +132,12 @@ public class ParticleMaster : MonoBehaviour
     void RenderParticles()
     {
         // m.SetColor("", );
+            var inverseViewMatrix = RenderCam.worldToCameraMatrix.inverse;
+            Material m = particleRenderMaterial;
+            // m.SetPass(0); 
+            // m.SetMatrix("_InvViewMatrix", inverseViewMatrix);
+            m.SetColor("_Color", particleColor);
+            m.SetBuffer("boidBuffer", particleComputeBuffer);
 
     }
 }
