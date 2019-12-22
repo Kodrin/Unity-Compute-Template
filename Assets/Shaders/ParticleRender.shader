@@ -32,6 +32,8 @@
 
         float4x4 _LookAtMatrix;
         float3 _BoidPosition;
+        float3 _BoidVelocity;
+        float _BoidSize;
 
          #ifdef UNITY_PROCEDURAL_INSTANCING_ENABLED
             StructuredBuffer<ParticleData> boidBuffer; 
@@ -49,20 +51,24 @@
             );
         }
      
-         void vert(inout appdata_full v, out Input data)
+        void vert(inout appdata_full v, out Input data)
         {
             UNITY_INITIALIZE_OUTPUT(Input, data);
 
             #ifdef UNITY_PROCEDURAL_INSTANCING_ENABLED
+                v.vertex *= _BoidSize;
                 v.vertex = mul(_LookAtMatrix, v.vertex);
                 v.vertex.xyz += _BoidPosition;
             #endif
         }
 
+        // where we setup the value references of our buffer 
         void setup()
         {
             #ifdef UNITY_PROCEDURAL_INSTANCING_ENABLED
                 _BoidPosition = boidBuffer[unity_InstanceID].position;
+                _BoidVelocity = boidBuffer[unity_InstanceID].velocity;
+                _BoidSize = boidBuffer[unity_InstanceID].size;
                 _LookAtMatrix = look_at_matrix(_BoidPosition, _BoidPosition + (boidBuffer[unity_InstanceID].velocity * -1), float3(0.0, 1.0, 0.0));
             #endif
         }

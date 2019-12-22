@@ -81,8 +81,11 @@ public class ParticleMaster : MonoBehaviour
     ParticleData CreateParticleData()
     {
         ParticleData p = new ParticleData();
-        p.position = Random.value * spawnArea;
-        p.velocity = Random.value * Vector3.one;
+        p.position.x = Random.insideUnitSphere.x * spawnArea.x;
+        p.position.y = Random.insideUnitSphere.y * spawnArea.y;
+        p.position.z = Random.insideUnitSphere.z * spawnArea.z;
+        p.velocity = Random.Range(-1.0f,1.0f) * Vector3.one;
+        p.size = Random.value * particleSize;
         return p;
     }
 
